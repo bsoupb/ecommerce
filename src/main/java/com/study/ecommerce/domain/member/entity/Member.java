@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class Member extends BaseTimeEntity {
+public class Member extends BaseTimeEntity {    // createdAt, updatedAt 자동 생성
 
     @Id     // PK
     @GeneratedValue(strategy = GenerationType.IDENTITY)     // AutoIncrement
@@ -27,7 +27,7 @@ public class Member extends BaseTimeEntity {
 
     private String address;
 
-    @Enumerated(EnumType.STRING)
+    @Enumerated(EnumType.STRING)    // enum 타입 가져오기
     @Column(nullable = false)
     private Role role;
 

@@ -20,6 +20,10 @@ import java.security.Key;
 import java.util.Date;
 import java.util.List;
 
+// username 가져오기, authentication 가져오기, 
+// 해당 토큰이 사용가능한 토큰인지, 토큰 가져오기(requestHeader),
+// 토큰 만료여부, 토큰 확인
+
 @Component
 @RequiredArgsConstructor
 public class JwtTokenProvider {
@@ -34,6 +38,7 @@ public class JwtTokenProvider {
 
     private final UserDetailsService userDetailsService;
 
+    // @PostConstruct: 빈이 생성된 후, 의존성 주입이 완료된 다음 자동으로 실행되도록 지정
     @PostConstruct
     protected void init() {
         this.key = Keys.hmacShaKeyFor(secretKey.getBytes(StandardCharsets.UTF_8));
@@ -54,6 +59,7 @@ public class JwtTokenProvider {
                 .compact();     // JWT 문자열로 직렬화하여 반환
     }
 
+    // 토큰 가져오기
     public String resolveToken(HttpServletRequest request) {
         String bearerToken = request.getHeader("Authorization");
         if(bearerToken != null && bearerToken.startsWith("Bearer ")) {
@@ -62,6 +68,7 @@ public class JwtTokenProvider {
         return null;
     }
 
+    // 토큰 검사
     public boolean validateToken(String token) {
         try {
             Jws<Claims> claims = Jwts.parserBuilder()
@@ -73,6 +80,9 @@ public class JwtTokenProvider {
             return false;
         }
     }
+    // JWT vs JWS
+    // JWT: 토큰 포맷
+    // JWS: JWT를 서명(Signature)으로 보호
 
     public Authentication getAuthentication(String token) {
         UserDetails userDetails = userDetailsService.loadUserByUsername(getUsername(token));

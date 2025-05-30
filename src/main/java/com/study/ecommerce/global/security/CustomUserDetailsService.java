@@ -22,6 +22,7 @@ public class CustomUserDetailsService implements UserDetailsService {
         Member member = memberRepository.findByEmail(username)
                 .orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다: " + username));
         return new User(member.getEmail(), member.getPassword(),
-                Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + member.getRole().name())));
+                Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + member.getRole().name())));      // 사용자 권한을 하나만 가진다고 가정
     }
+    // Collections.singletonList(): 요소 하나만 갖는 불변 리스트 만들 때 사용
 }
