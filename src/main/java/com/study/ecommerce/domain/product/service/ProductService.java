@@ -75,23 +75,58 @@ public class ProductService {
     // id 기준으로 가져오기(get)
     @Transactional(readOnly = true)
     public ProductResponse getProduct(Long id) {
-        // TODO
-        return null;
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("존재하지 않은 id 입니다."));
+
+        Category category = categoryRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("존재하지 않은 id 입니다."));
+
+        return new ProductResponse(
+                product.getId(),
+                product.getName(),
+                product.getDescription(),
+                product.getPrice(),
+                product.getStockQuantity(),
+                product.getStatus(),
+                category.getName()
+        );
     }
     
     // update
     @Transactional
     public ProductResponse updateProduct(Long id, ProductUpdateRequest request, String email) {
         // 프로덕트 찾기
-        
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("존재하지 않은 id 입니다."));
         // 현재 사용자가 판매자인지 확인
-        
+        Member seller = memberRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("존재하지 않은 판매자입니다."));
+
+        if(!seller.getEmail().equals(email)) {
+            throw new IllegalArgumentException("상품을 수정할 권한이 없습니다.");
+        }
         // 카테고리 찾기
-        
+        Category category = categoryRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("존재하지 않은 카테고리 입니다."));
         // 프로덕트 업데이트하고 -> jpa 더티체킹 더티캐싱
-        
+        product.update(
+            request.name(),
+            request.description(),
+            request.price(),
+            request.stockQuantity(),
+            request.status(),
+            category.getId()
+        );
         // 반환
-        return null;
+        return new ProductResponse(
+                product.getId(),
+                product.getName(),
+                product.getDescription(),
+                product.getPrice(),
+                product.getStockQuantity(),
+                product.getStatus(),
+                category.getName()
+        );
     }
 
 }

@@ -61,8 +61,11 @@ public class CategoryServiceCustom implements CategoryService {
     }
 
     @Override
-    @Transactional
+    @Transactional(readOnly = true)
     public CategoryResponse getCategory(Long id) {
+        Category category = categoryRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("해당 id는 존재하지 않습니다."));
+
         return null;
     }
 
@@ -96,12 +99,32 @@ public class CategoryServiceCustom implements CategoryService {
     }
 
     @Override
+    @Transactional
     public CategoryResponse updateCategory(Long id, CategoryRequest request) {
-        return null;
+        Category beforeCategory = categoryRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("해당 id 값은 존재하지 않습니다."));
+
+        return new CategoryResponse(
+                beforeCategory.getId(),
+                request.name(),
+                beforeCategory.getDepth(),
+                request.parentId(),
+                List.of()
+        );
     }
 
     @Override
+    @Transactional
     public void deleteCategory(Long id) {
+        Category category = categoryRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("해당되는 id를 찾을 수 없습니다"));
+        int depth = category.getDepth();
+
+        if(depth != 1) {
+            categoryRepository.delete(category);
+        }
+
+        categoryRepository.deleteById(id);
 
     }
 }
