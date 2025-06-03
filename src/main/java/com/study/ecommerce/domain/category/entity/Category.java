@@ -31,4 +31,9 @@ public class Category extends BaseTimeEntity {
         this.depth = depth;
         this.parentId = parentId;
     }
+
+    public void update(String name, Long parentId) {
+        this.name = name;
+        this.parentId = parentId;
+    }
 }

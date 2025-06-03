@@ -1,6 +1,7 @@
 package com.study.ecommerce.domain.product.dto.req;
 
 import com.study.ecommerce.domain.product.entity.Product;
+import com.study.ecommerce.domain.product.entity.Product.ProductStatus;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.validation.constraints.NotBlank;
@@ -22,7 +23,7 @@ public record ProductUpdateRequest(
         Integer stockQuantity,
 
         @NotNull(message = "현재 재고 상태는 필수입니다.")
-        Product.ProductStatus status,
+        ProductStatus status,
 
         @NotNull(message = "카테고리는 필수입니다.")
         Long categoryId
