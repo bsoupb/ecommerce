@@ -4,8 +4,10 @@ import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.Expressions;
+import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import com.study.ecommerce.domain.category.entity.QCategory;
 import com.study.ecommerce.domain.product.dto.req.ProductSearchCondition;
 import com.study.ecommerce.domain.product.dto.resp.ProductSummaryDto;
 import com.study.ecommerce.domain.product.entity.Product;
@@ -31,6 +33,7 @@ public class ProductQueryRepositoryCustom implements ProductQueryRepository {
             Pageable pageable
     ) {
         QProduct product = QProduct.product;
+        QCategory category = QCategory.category;
 
         // 동적 쿼리를 생성하기 위한 조건
         BooleanBuilder builder = new BooleanBuilder();
@@ -73,12 +76,23 @@ public class ProductQueryRepositoryCustom implements ProductQueryRepository {
                         product.price,
                         product.stockQuantity,
                         // 카테고리 이름 대신 상수값을 반환
-                        Expressions.asString("Category").as("categoryName"),
+//                        Expressions.asString("Category").as("categoryName"),
+
+                        // 과제: 상수값이 아닌 실제값 가져오는 것 (join 사용 작성)
+//                        category.name,
+
                         // 과제: 상수값이 아닌 실제값 가져오는 것 (서브쿼리로 작성)
+                        JPAExpressions.select(category.name)
+                                .from(category)
+                                .where(category.id.eq(product.categoryId)),
                         product.status
                 ))
                 .from(product)
                 .where(builder)
+                // 조인
+                // 과제: 상수값이 아닌 실제값 가져오는 것 (join 사용 작성)
+//                .join(category)
+//                .on(product.id.eq(category.id))
                 .offset(pageable.getOffset())       // 페이지 갯수 -> 한페이지에 몇개씩 나타내겠는가
                 .limit(pageable.getPageSize())
                 .orderBy(getOrderSpecifier(pageable, product))
