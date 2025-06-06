@@ -34,43 +34,53 @@ public class ProductService {
     public Page<ProductResponse> getProducts(ProductSearchCondition condition, Pageable pageable) {
         Page<ProductSummaryDto> productSummaryDtos = productRepository.searchProducts(condition, pageable);
 
-        List<Long> categoryIds = productSummaryDtos.getContent().stream()
-                .map(dto -> {
-                    Product product = productRepository.findById(dto.id())
-                            .orElseThrow(() -> new EntityNotFoundException("상품을 찾을 수 없습니다."));
-                    return product.getCategoryId();
-                })
-                .filter(Objects::nonNull)
-                .distinct()
-                .toList();
+        return productSummaryDtos.map(dto -> new ProductResponse(
+                dto.id(),
+                dto.name(),
+                null,
+                dto.price(),
+                dto.stockQuantity(),
+                dto.status(),
+                dto.categoryName()
+        ));
 
-        Map<Long, String> categoryMap = new HashMap<>();
-
-        if(!categoryIds.isEmpty()) {
-            List<Category> categories = categoryRepository.findAllById(categoryIds);
-            categories.forEach(category ->
-                    categoryMap.put(category.getId(), category.getName()));
-        }
-
-        return productSummaryDtos.map(dto -> {
-            Product product = productRepository.findById(dto.id())
-                    .orElseThrow(() -> new EntityNotFoundException("상품을 찾을 수 없습니다."));
-
-            String categoryName = "분류 없음";
-            if(product.getCategoryId() != null) {
-                categoryName = categoryMap.getOrDefault(product.getCategoryId(), "분류 없음");
-            }
-
-            return new ProductResponse(
-                    dto.id(),
-                    dto.name(),
-                    null,
-                    dto.price(),
-                    dto.stockQuantity(),
-                    dto.status(),
-                    categoryName
-            );
-        });
+//        List<Long> categoryIds = productSummaryDtos.getContent().stream()
+//                .map(dto -> {
+//                    Product product = productRepository.findById(dto.id())
+//                            .orElseThrow(() -> new EntityNotFoundException("상품을 찾을 수 없습니다."));
+//                    return product.getCategoryId();
+//                })
+//                .filter(Objects::nonNull)
+//                .distinct()
+//                .toList();
+//
+//        Map<Long, String> categoryMap = new HashMap<>();
+//
+//        if(!categoryIds.isEmpty()) {
+//            List<Category> categories = categoryRepository.findAllById(categoryIds);
+//            categories.forEach(category ->
+//                    categoryMap.put(category.getId(), category.getName()));
+//        }
+//
+//        return productSummaryDtos.map(dto -> {
+//            Product product = productRepository.findById(dto.id())
+//                    .orElseThrow(() -> new EntityNotFoundException("상품을 찾을 수 없습니다."));
+//
+//            String categoryName = "분류 없음";
+//            if(product.getCategoryId() != null) {
+//                categoryName = categoryMap.getOrDefault(product.getCategoryId(), "분류 없음");
+//            }
+//
+//            return new ProductResponse(
+//                    dto.id(),
+//                    dto.name(),
+//                    null,
+//                    dto.price(),
+//                    dto.stockQuantity(),
+//                    dto.status(),
+//                    categoryName
+//            );
+//        });
     }
 
     // create
