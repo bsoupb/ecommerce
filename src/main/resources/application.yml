@@ -37,14 +37,12 @@ springdoc:
   default-produces-media-type: application/json
 
 jwt:
-  secret: 389f3edd994b336b9d6a20e740efae1fa943ab725568123c12bc0f4f993bb23c
-  token-validity-in-milliseconds: 86400000  # 24hour
+  secret: 8b329d5befe084f6dbb351fc10b9074b9fab576ec3753f54dd5f8894e08d8ec6
+  token-validity-in-milliseconds: 86400000 # 24hour
 
 server:
   port: 8080
-
 ---
-
 spring:
   config:
     activate:
