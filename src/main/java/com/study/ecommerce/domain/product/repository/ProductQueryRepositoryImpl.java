@@ -1,11 +1,9 @@
 package com.study.ecommerce.domain.product.repository;
 
-import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
-import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.study.ecommerce.domain.category.entity.QCategory;
@@ -25,7 +23,7 @@ import java.math.BigDecimal;
 import java.util.List;
 
 @RequiredArgsConstructor
-public class ProductQueryRepositoryCustom implements ProductQueryRepository{
+public class ProductQueryRepositoryImpl implements ProductQueryRepository{
     private final JPAQueryFactory queryFactory;
 
     @Override

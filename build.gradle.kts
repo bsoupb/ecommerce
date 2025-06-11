@@ -33,6 +33,8 @@ dependencies {
 	// database
 	implementation("org.flywaydb:flyway-core")		// 데이터베이스 마이그레이션 툴 (SQL 파일 사용)
 	runtimeOnly("com.h2database:h2")				// 자바 기반의 오픈소스 관계형 데이터베이스 관리 시스템 (In-Memory)
+	runtimeOnly("com.mysql:mysql-connector-j")
+	implementation("org.flywaydb:flyway-mysql")
 
 	// swagger
 	implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.8")
