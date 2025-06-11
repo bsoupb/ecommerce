@@ -37,15 +37,15 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository{
         QMember member = QMember.member;
 
         // tuple
-        List<Tuple> tuples = queryFactory
-                .select(member.name, member.email)
-                .from(member)
-                .fetch();
-
-        for(Tuple tuple : tuples) {
-            String name = tuple.get(member.name);
-            String email = tuple.get(member.email);
-        }
+//        List<Tuple> tuples = queryFactory
+//                .select(member.name, member.email)
+//                .from(member)
+//                .fetch();
+//
+//        for(Tuple tuple : tuples) {
+//            String name = tuple.get(member.name);
+//            String email = tuple.get(member.email);
+//        }
 
         List<ProductSummaryDto> content = queryFactory
                 .select(Projections.constructor(ProductSummaryDto.class,

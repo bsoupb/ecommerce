@@ -4,7 +4,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Version;
 
-@Entity
+//@Entity
 public class OptimisticLock {
     @Id
     private Long id;
