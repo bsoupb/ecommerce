@@ -36,7 +36,6 @@ import static com.study.ecommerce.domain.order.entity.Order.OrderStatus.CANCELED
 import static com.study.ecommerce.domain.order.entity.Order.OrderStatus.CREATED;
 import static com.study.ecommerce.domain.payment.entity.Payment.*;
 import static com.study.ecommerce.domain.payment.entity.Payment.PaymentStatus.*;
-import static com.study.ecommerce.domain.payment.entity.Payment.PaymentStatus.CANCELED;
 
 @Service
 @RequiredArgsConstructor
