@@ -105,7 +105,7 @@ public class CartServiceCustom implements CartService {
                 savedCartItem.getProductId(),
                 product.getName(),
                 product.getPrice(),
-                request.quantity(), 
+                savedCartItem.getQuantity(),
                 product.getPrice() * savedCartItem.getQuantity()
         );
     }
@@ -136,8 +136,8 @@ public class CartServiceCustom implements CartService {
                 product.getId(),
                 product.getName(),
                 product.getPrice(),
-                product.getStockQuantity(),
-                product.getPrice() * product.getStockQuantity()
+                cartItem.getQuantity(),
+                product.getPrice() * cartItem.getQuantity()
         );
     }
 

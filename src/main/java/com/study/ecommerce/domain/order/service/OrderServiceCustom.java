@@ -32,7 +32,11 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import static com.study.ecommerce.domain.order.entity.Order.OrderStatus.CANCELED;
 import static com.study.ecommerce.domain.order.entity.Order.OrderStatus.CREATED;
+import static com.study.ecommerce.domain.payment.entity.Payment.*;
+import static com.study.ecommerce.domain.payment.entity.Payment.PaymentStatus.*;
+import static com.study.ecommerce.domain.payment.entity.Payment.PaymentStatus.CANCELED;
 
 @Service
 @RequiredArgsConstructor
@@ -67,6 +71,7 @@ public class OrderServiceCustom implements OrderService {
 
         order = orderRepository.save(order);
 
+        // 주문서 생성한 뒤 총액 업데이트
         // 3. 주문 상품 처리 및 총액 계산
         long totalAmount = 0L;
 
@@ -74,7 +79,7 @@ public class OrderServiceCustom implements OrderService {
             // 장바구니로 상품을 주문
             totalAmount = processCartItems(order, request.cartItemIds(), member);
         } else if(request.items() != null && !request.items().isEmpty()) {
-            // 직접 지정한 상품
+            // 직접 지정한 상품 (장바구니에 있는건 아님)
             totalAmount = processDirectItems(order, request.items());
         } else {
             throw new IllegalArgumentException("주문한 상품이 지정되지 않았습니다.");
@@ -86,7 +91,7 @@ public class OrderServiceCustom implements OrderService {
 
         // 5. 결제 진행 (비동기로 처리해도 됨)
         if(request.payNow()) {
-            Payment payment = mockPaymentService.processPayment(order, Payment.PaymentMethod.valueOf(request.paymentMethod()));
+            Payment payment = mockPaymentService.processPayment(order, PaymentMethod.valueOf(request.paymentMethod()));
             order.updateStatus(OrderStatus.PAID);
             orderRepository.save(order);
         }
@@ -95,44 +100,45 @@ public class OrderServiceCustom implements OrderService {
 
     }
 
-    private long processDirectItems(Order order, List<OrderItemRequest> items) {
-        long totalAmount = 0L;
-
-        for(OrderItemRequest request : items) {
-            // 상품 재고 확인 및 감소
-            Product product = productRepository.findByIdWithPessimisticLock(request.getProductId())
-                    .orElseThrow(() -> new EntityNotFoundException("상품을 찾을 수 없습니다."));
-
-            product.decreasesStock(request.getQuantity());
-            productRepository.save(product);
-
-            OrderItem orderItem = OrderItem.builder()
-                    .orderId(order.getId())
-                    .productId(product.getId())
-                    .quantity(request.getQuantity())
-                    .price(product.getPrice())
-                    .build();
-
-            orderItemRepository.save(orderItem);
-            totalAmount += orderItem.getTotalPrice();
-        }
-        return totalAmount;
-    }
-
     @Override
+    @Transactional
     public OrderResponse cancelOrder(Long orderId, String email) {
         // 주문 조회
-        
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new EntityNotFoundException("주문을 찾을 수 없습니다. id = " + orderId));
         // 주문자 확인
-        
+        Member member = memberRepository.findByEmail(email)
+                .orElseThrow(() -> new EntityNotFoundException("사용자를 찾을 수 없습니다."));
+
         // 주문 상태 확인
-        
+        OrderStatus status = order.getStatus();
+
         // 결제 취소(결제가 완료된 경우)
-        
+        Payment payment = paymentRepository.findByOrderId(orderId)
+                .orElseThrow(() -> new EntityNotFoundException("결제 정보를 찾을 수 없습니다."));
+
+        if(payment.getStatus().equals(COMPLETED)) {
+            payment.updateStatus(PaymentStatus.CANCELED);
+        } else {
+            throw new IllegalArgumentException("결제 취소를 할 수 없습니다.");
+        }
+
+        // 결제 금액 원복
+        Long totalAmount = payment.getAmount();
+
         // 재고 원복
-        
+        List<OrderItem> orderItems = orderItemRepository.findByOrderId(orderId);
+        Integer quantity = 0;
+        for(OrderItem item : orderItems) {
+            Product product = productRepository.findByIdWithPessimisticLock(item.getProductId())
+                    .orElseThrow(() -> new EntityNotFoundException("상품을 찾을 수 없습니다."));
+            quantity = product.getStockQuantity() + item.getQuantity();
+        }
+
         // 주문상태 변경
-        return null;
+        order.updateStatus(OrderStatus.CANCELED);
+
+        return new OrderResponse(orderId, order.getStatus(), totalAmount);
     }
 
     @Override
@@ -179,9 +185,27 @@ public class OrderServiceCustom implements OrderService {
 
     @Override
     public Page<OrderResponse> getOrders(String email, Pageable pageable) {
-        return null;
+        Member member = memberRepository.findByEmail(email)
+                .orElseThrow(() -> new EntityNotFoundException("회원을 찾을 수 없습니다."));
+
+        if(!member.getEmail().equals(email)) {
+            throw new IllegalArgumentException("주문 조회 권한이 없습니다.");
+        }
+
+        Order order = orderRepository.findByMemberId(member.getId())
+                .orElseThrow(() -> new EntityNotFoundException("주문을 찾을 수 없습니다."));
+
+        Page<Order> page = orderRepository.findAll(pageable);
+
+        return page
+                .map(o -> new OrderResponse(
+                        o.getId(),
+                        o.getStatus(),
+                        o.getTotalAmount()
+                ));
     }
 
+    // 전체 가격을 계산하기 위한 메서드
     private long processCartItems(Order order, List<Long> cartItemIds, Member member) {
         Cart cart = cartRepository.findByMemberId(member.getId())
                 .orElseThrow(() -> new EntityNotFoundException("장바구니를 찾을 수 없습니다."));
@@ -197,6 +221,7 @@ public class OrderServiceCustom implements OrderService {
                 throw new IllegalArgumentException("장바구니 상품 접근 권한이 없습니다.");
             }
 
+            // 비관적락 사용
             Product product = productRepository.findByIdWithPessimisticLock(cartItem.getProductId())
                     .orElseThrow(() -> new EntityNotFoundException("상품을 찾을 수 없습니다."));
 
@@ -221,4 +246,29 @@ public class OrderServiceCustom implements OrderService {
 
         return totalAmount;
     }
+
+    private long processDirectItems(Order order, List<OrderItemRequest> items) {
+        long totalAmount = 0L;
+
+        for(OrderItemRequest request : items) {
+            // 상품 재고 확인 및 감소
+            Product product = productRepository.findByIdWithPessimisticLock(request.getProductId())
+                    .orElseThrow(() -> new EntityNotFoundException("상품을 찾을 수 없습니다."));
+
+            product.decreasesStock(request.getQuantity());
+            productRepository.save(product);
+
+            OrderItem orderItem = OrderItem.builder()
+                    .orderId(order.getId())
+                    .productId(product.getId())
+                    .quantity(request.getQuantity())
+                    .price(product.getPrice())
+                    .build();
+
+            orderItemRepository.save(orderItem);
+            totalAmount += orderItem.getTotalPrice();
+        }
+        return totalAmount;
+    }
+
 }

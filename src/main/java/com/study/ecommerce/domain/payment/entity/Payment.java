@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
+// 하나의 주문에 대한 계산
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)

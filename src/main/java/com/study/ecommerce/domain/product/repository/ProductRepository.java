@@ -11,7 +11,7 @@ import java.util.Optional;
 
 public interface ProductRepository extends JpaRepository<Product, Long> , ProductQueryRepository {
 
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Lock(LockModeType.PESSIMISTIC_WRITE)       // 쓰기 작업을 할 때 동시 접근 제어
     @Query("select p from Product p where p.id = :id")
     Optional<Product> findByIdWithPessimisticLock(@Param("id") Long productId);
 
