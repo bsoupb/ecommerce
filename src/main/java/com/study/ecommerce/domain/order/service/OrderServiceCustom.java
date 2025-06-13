@@ -104,41 +104,85 @@ public class OrderServiceCustom implements OrderService {
     public OrderResponse cancelOrder(Long orderId, String email) {
         // 주문 조회
         Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new EntityNotFoundException("주문을 찾을 수 없습니다. id = " + orderId));
+                .orElseThrow(() -> new EntityNotFoundException("주문을 찾을 수 없습니다."));
+
         // 주문자 확인
-        Member member = memberRepository.findByEmail(email)
+        Member member = memberRepository.findById(order.getMemberId())
                 .orElseThrow(() -> new EntityNotFoundException("사용자를 찾을 수 없습니다."));
 
+        if (!member.getEmail().equals(email)) {
+            throw new IllegalArgumentException("주문 취소 권한이 없습니다.");
+        }
+
         // 주문 상태 확인
-        OrderStatus status = order.getStatus();
-
-        // 결제 취소(결제가 완료된 경우)
-        Payment payment = paymentRepository.findByOrderId(orderId)
-                .orElseThrow(() -> new EntityNotFoundException("결제 정보를 찾을 수 없습니다."));
-
-        if(payment.getStatus().equals(COMPLETED)) {
-            payment.updateStatus(PaymentStatus.CANCELED);
-        } else {
-            throw new IllegalArgumentException("결제 취소를 할 수 없습니다.");
+        if (order.getStatus() == OrderStatus.SHIPPING || order.getStatus() == OrderStatus.DELIVERED) {
+            throw new IllegalArgumentException("배송 중이거나 배송이 완료된 주문은 취소할 수 없습니다.");
         }
 
-        // 결제 금액 원복
-        Long totalAmount = payment.getAmount();
+        // 결제 취소 (결제가 완료된 경우)
+        if (order.getStatus() == OrderStatus.PAID) {
+            Payment payment = paymentRepository.findByOrderId(order.getId())
+                    .orElseThrow(() -> new EntityNotFoundException("결제 정보를 찾을 수 없습니다."));
+            mockPaymentService.cancelPayment(payment);
 
-        // 재고 원복
-        List<OrderItem> orderItems = orderItemRepository.findByOrderId(orderId);
-        Integer quantity = 0;
-        for(OrderItem item : orderItems) {
-            Product product = productRepository.findByIdWithPessimisticLock(item.getProductId())
-                    .orElseThrow(() -> new EntityNotFoundException("상품을 찾을 수 없습니다."));
-            quantity = product.getStockQuantity() + item.getQuantity();
+            List<OrderItem> orderItems = orderItemRepository.findByOrderId(order.getId());
+            for (OrderItem item : orderItems) {
+                Product product = productRepository.findById(item.getProductId())
+                        .orElseThrow(() -> new EntityNotFoundException("상품을 찾을 수 없습니다."));
+
+                product.increasesStock(item.getQuantity());
+                productRepository.save(product);
+            }
+
+            // 주문 상태를 변경
+            order.updateStatus(OrderStatus.CANCELED);
         }
 
-        // 주문상태 변경
-        order.updateStatus(OrderStatus.CANCELED);
+        orderRepository.save(order);
 
-        return new OrderResponse(orderId, order.getStatus(), totalAmount);
+        return new OrderResponse(order.getId(), order.getStatus(), order.getTotalAmount());
     }
+
+//    @Override
+//    @Transactional
+//    public OrderResponse cancelOrder(Long orderId, String email) {
+//        // 주문 조회
+//        Order order = orderRepository.findById(orderId)
+//                .orElseThrow(() -> new EntityNotFoundException("주문을 찾을 수 없습니다. id = " + orderId));
+//        // 주문자 확인
+//        Member member = memberRepository.findByEmail(email)
+//                .orElseThrow(() -> new EntityNotFoundException("사용자를 찾을 수 없습니다."));
+//
+//        // 주문 상태 확인
+//        OrderStatus status = order.getStatus();
+//
+//        // 결제 취소(결제가 완료된 경우)
+//        Payment payment = paymentRepository.findByOrderId(orderId)
+//                .orElseThrow(() -> new EntityNotFoundException("결제 정보를 찾을 수 없습니다."));
+//
+//        if(payment.getStatus().equals(COMPLETED)) {
+//            payment.updateStatus(PaymentStatus.CANCELED);
+//        } else {
+//            throw new IllegalArgumentException("결제 취소를 할 수 없습니다.");
+//        }
+//
+//        // 결제 금액 원복
+//        Long totalAmount = payment.getAmount();
+//
+//        // 재고 원복
+//        List<OrderItem> orderItems = orderItemRepository.findByOrderId(orderId);
+//        Integer quantity = 0;
+//        for(OrderItem item : orderItems) {
+//            Product product = productRepository.findByIdWithPessimisticLock(item.getProductId())
+//                    .orElseThrow(() -> new EntityNotFoundException("상품을 찾을 수 없습니다."));
+//            quantity = product.getStockQuantity() + item.getQuantity();
+//        }
+//
+//        // 주문상태 변경
+//        order.updateStatus(OrderStatus.CANCELED);
+//
+//        return new OrderResponse(orderId, order.getStatus(), totalAmount);
+//    }
 
     @Override
     @Transactional(readOnly = true)
@@ -185,24 +229,34 @@ public class OrderServiceCustom implements OrderService {
     @Override
     public Page<OrderResponse> getOrders(String email, Pageable pageable) {
         Member member = memberRepository.findByEmail(email)
-                .orElseThrow(() -> new EntityNotFoundException("회원을 찾을 수 없습니다."));
+                .orElseThrow(() -> new EntityNotFoundException("사용자를 찾을 수 없습니다."));
 
-        if(!member.getEmail().equals(email)) {
-            throw new IllegalArgumentException("주문 조회 권한이 없습니다.");
-        }
+        Page<Order> orders = orderRepository.findByMemberId(member.getId(), pageable);
 
-        Order order = orderRepository.findByMemberId(member.getId())
-                .orElseThrow(() -> new EntityNotFoundException("주문을 찾을 수 없습니다."));
-
-        Page<Order> page = orderRepository.findAll(pageable);
-
-        return page
-                .map(o -> new OrderResponse(
-                        o.getId(),
-                        o.getStatus(),
-                        o.getTotalAmount()
-                ));
+        return orders.map(order -> new OrderResponse(order.getId(), order.getStatus(), order.getTotalAmount()));
     }
+
+//    @Override
+//    public Page<OrderResponse> getOrders(String email, Pageable pageable) {
+//        Member member = memberRepository.findByEmail(email)
+//                .orElseThrow(() -> new EntityNotFoundException("회원을 찾을 수 없습니다."));
+//
+//        if(!member.getEmail().equals(email)) {
+//            throw new IllegalArgumentException("주문 조회 권한이 없습니다.");
+//        }
+//
+//        Order order = orderRepository.findByMemberId(member.getId())
+//                .orElseThrow(() -> new EntityNotFoundException("주문을 찾을 수 없습니다."));
+//
+//        Page<Order> page = orderRepository.findAll(pageable);
+//
+//        return page
+//                .map(o -> new OrderResponse(
+//                        o.getId(),
+//                        o.getStatus(),
+//                        o.getTotalAmount()
+//                ));
+//    }
 
     // 전체 가격을 계산하기 위한 메서드
     private long processCartItems(Order order, List<Long> cartItemIds, Member member) {
