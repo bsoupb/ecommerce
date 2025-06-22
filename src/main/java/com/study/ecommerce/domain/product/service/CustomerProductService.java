@@ -9,6 +9,7 @@ import com.study.ecommerce.global.error.exception.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,6 +18,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Stream;
 
 import static com.study.ecommerce.domain.product.entity.Product.ProductStatus.ACTIVE;
 
@@ -141,21 +143,114 @@ public class CustomerProductService {
         Page<ProductResponse>
         pram Pageable, String keyword
      */
+    public Page<ProductResponse> searchActiveProductByProductName(Pageable pageable, String keyword) {
+        Page<Product> products = productRepository.findByStatus(ACTIVE, pageable);
+
+        if(keyword == null || keyword.isEmpty()) {
+            throw new IllegalArgumentException("검색어를 입력해 주십시오.");
+        }
+
+        Page<ProductResponse> productResponses = setProductResponse(pageable, products);
+
+        List<ProductResponse> productResponseList = productResponses.stream()
+                .filter(productResp -> productResp.name() != null && productResp.name().contains(keyword))
+                .toList();
+
+        return new PageImpl<>(productResponseList, pageable, productResponseList.size());
+    }
 
     /*
         가격 범위로 판매중인 상품 검색
         param Pageable, Long minPrice, Long maxPrice
      */
+    public Page<ProductResponse> searchProductByPrice(Pageable pageable, Long minPrice, Long maxPrice) {
+        Page<Product> products = productRepository.findByStatus(ACTIVE, pageable);
+
+        if(minPrice == null || maxPrice == null) {
+            throw new IllegalArgumentException("최소금액 또는 최대금액을 다시 확인해주십시오");
+        }
+
+        Page<ProductResponse> productResponses = setProductResponse(pageable, products);
+
+        List<ProductResponse> productResponseList = productResponses.stream()
+                .filter(productResp -> (productResp.price() >= minPrice) && (productResp.price() <= maxPrice))
+                .toList();
+
+
+        return new PageImpl<>(productResponseList, pageable, productResponseList.size());
+    }
 
     /*
         카테고리 내에서 상품명으로 검색
         param Pageable, categoryId, keyword
      */
+    public Page<ProductResponse> searchProductByKeywordInCategory(Pageable pageable, Long categoryId, String keyword) {
+        Category category = categoryRepository.findById(categoryId, pageable)
+                .orElseThrow(() -> new EntityNotFoundException("존재하지 않는 카테고리 입니다."));
+
+        Page<Product> products = productRepository.findByCategoryId(categoryId, pageable);
+
+        if(keyword == null || keyword.isEmpty()) {
+            throw new IllegalArgumentException("검색어를 입력해 주십시오.");
+        }
+
+        Page<ProductResponse> productResponses = setProductResponse(pageable, products);
+
+        List<ProductResponse> productResponseList = productResponses.stream()
+                .filter(productResp ->
+                        productResp.name().equals(keyword)
+                )
+                .toList();
+
+        return new PageImpl<>(productResponseList, pageable, productResponseList.size());
+    }
 
     /*
         extract method
-        Product Page를 ProductResponse의 페이지로 변환하는 공통 메서드 구현
+        Product Page를 ProductResponse의 Page로 변환하는 공통 메서드 구현
         Page<Product> -> Page<ProductResponse>
      */
+    public Page<ProductResponse> setProductResponse(Pageable pageable, Page<Product> productPage) {
+        Map<Long, String> categoryMap = categoryNameSetting(productPage);
+
+        List<Product> productsList = productPage.getContent();
+
+        List<ProductResponse> productResponseList = productsList.stream()
+                .map(product -> new ProductResponse(
+                        product.getId(),
+                        product.getName(),
+                        product.getDescription(),
+                        product.getPrice(),
+                        product.getStockQuantity(),
+                        product.getStatus(),
+                        categoryMap.getOrDefault(product.getCategoryId(), "분류 없음")
+                ))
+                .toList();
+
+        return new PageImpl<>(productResponseList, pageable, productResponseList.size());
+    }
+    
+    /*
+        categoryName 구하는 메서드
+        -> setProductResponse 메서드 생성하면서 필요 없을듯..?
+     */
+    public Map<Long, String> categoryNameSetting(Page<Product> products) {
+
+        List<Long> categoryIds = products.stream()
+                .map(Product::getCategoryId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+        Map<Long, String> categoryMap = new HashMap<>();
+
+        if(!categoryIds.isEmpty()) {
+            List<Category> categories = categoryRepository.findAllById(categoryIds);
+            categories.forEach(category ->
+                    categoryMap.put(category.getId(), category.getName()));
+        }
+
+        return categoryMap;
+    }
+
 
 }

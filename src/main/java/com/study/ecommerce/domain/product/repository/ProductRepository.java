@@ -1,5 +1,6 @@
 package com.study.ecommerce.domain.product.repository;
 
+import com.study.ecommerce.domain.category.entity.Category;
 import com.study.ecommerce.domain.product.entity.Product;
 import com.study.ecommerce.domain.product.entity.Product.ProductStatus;
 import jakarta.persistence.LockModeType;
@@ -23,10 +24,11 @@ public interface ProductRepository extends JpaRepository<Product, Long> , Produc
     @Query("select p from Product p where p.id = :id")
     Optional<Product> findByIdWithOptimisticLock(@Param("id") Long productId);
 
-
     List<Product> findByCategoryIdAndStatus(Long categoryId, ProductStatus productStatus);
 
     Page<Product> findByStatus(ProductStatus productStatus, Pageable pageable);
 
     Optional<Product> findByIdAndStatus(Long id, ProductStatus productStatus);
+
+    Page<Product> findByCategoryId(Long categoryId, Pageable pageable);
 }
