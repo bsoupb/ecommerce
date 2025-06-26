@@ -144,19 +144,13 @@ public class CustomerProductService {
         pram Pageable, String keyword
      */
     public Page<ProductResponse> searchActiveProductByProductName(Pageable pageable, String keyword) {
-        Page<Product> products = productRepository.findByStatus(ACTIVE, pageable);
-
         if(keyword == null || keyword.isEmpty()) {
             throw new IllegalArgumentException("검색어를 입력해 주십시오.");
         }
 
-        Page<ProductResponse> productResponses = setProductResponse(pageable, products);
+        Page<Product> products = productRepository.findByStatusAndNameContaining(ACTIVE, keyword, pageable);
 
-        List<ProductResponse> productResponseList = productResponses.stream()
-                .filter(productResp -> productResp.name() != null && productResp.name().contains(keyword))
-                .toList();
-
-        return new PageImpl<>(productResponseList, pageable, productResponseList.size());
+        return setProductResponse(pageable, products);
     }
 
     /*
@@ -164,20 +158,13 @@ public class CustomerProductService {
         param Pageable, Long minPrice, Long maxPrice
      */
     public Page<ProductResponse> searchProductByPrice(Pageable pageable, Long minPrice, Long maxPrice) {
-        Page<Product> products = productRepository.findByStatus(ACTIVE, pageable);
-
         if(minPrice == null || maxPrice == null) {
             throw new IllegalArgumentException("최소금액 또는 최대금액을 다시 확인해주십시오");
         }
 
-        Page<ProductResponse> productResponses = setProductResponse(pageable, products);
+        Page<Product> products = productRepository.findByIdGreaterThanEqualAndIdLessThanEqual(ACTIVE, minPrice, maxPrice, pageable);
 
-        List<ProductResponse> productResponseList = productResponses.stream()
-                .filter(productResp -> (productResp.price() >= minPrice) && (productResp.price() <= maxPrice))
-                .toList();
-
-
-        return new PageImpl<>(productResponseList, pageable, productResponseList.size());
+        return setProductResponse(pageable, products);
     }
 
     /*
@@ -185,24 +172,16 @@ public class CustomerProductService {
         param Pageable, categoryId, keyword
      */
     public Page<ProductResponse> searchProductByKeywordInCategory(Pageable pageable, Long categoryId, String keyword) {
-        Category category = categoryRepository.findById(categoryId, pageable)
-                .orElseThrow(() -> new EntityNotFoundException("존재하지 않는 카테고리 입니다."));
-
-        Page<Product> products = productRepository.findByCategoryId(categoryId, pageable);
-
         if(keyword == null || keyword.isEmpty()) {
             throw new IllegalArgumentException("검색어를 입력해 주십시오.");
         }
 
-        Page<ProductResponse> productResponses = setProductResponse(pageable, products);
+        Category category = categoryRepository.findById(categoryId, pageable)
+                .orElseThrow(() -> new EntityNotFoundException("존재하지 않는 카테고리 입니다."));
 
-        List<ProductResponse> productResponseList = productResponses.stream()
-                .filter(productResp ->
-                        productResp.name().equals(keyword)
-                )
-                .toList();
+        Page<Product> products = productRepository.findByStatusAndCategoryIdAndNameContaining(categoryId, ACTIVE, keyword, pageable);
 
-        return new PageImpl<>(productResponseList, pageable, productResponseList.size());
+        return setProductResponse(pageable, products);
     }
 
     /*
@@ -210,12 +189,10 @@ public class CustomerProductService {
         Product Page를 ProductResponse의 Page로 변환하는 공통 메서드 구현
         Page<Product> -> Page<ProductResponse>
      */
-    public Page<ProductResponse> setProductResponse(Pageable pageable, Page<Product> productPage) {
-        Map<Long, String> categoryMap = categoryNameSetting(productPage);
+    public Page<ProductResponse> setProductResponse(Pageable pageable, Page<Product> products) {
+        Map<Long, String> categoryMap = categoryNameSetting(products.getContent());
 
-        List<Product> productsList = productPage.getContent();
-
-        List<ProductResponse> productResponseList = productsList.stream()
+        Page<ProductResponse> result = products
                 .map(product -> new ProductResponse(
                         product.getId(),
                         product.getName(),
@@ -224,17 +201,15 @@ public class CustomerProductService {
                         product.getStockQuantity(),
                         product.getStatus(),
                         categoryMap.getOrDefault(product.getCategoryId(), "분류 없음")
-                ))
-                .toList();
+                ));
 
-        return new PageImpl<>(productResponseList, pageable, productResponseList.size());
+        return result;
     }
     
     /*
         categoryName 구하는 메서드
-        -> setProductResponse 메서드 생성하면서 필요 없을듯..?
      */
-    public Map<Long, String> categoryNameSetting(Page<Product> products) {
+    public Map<Long, String> categoryNameSetting(List<Product> products) {
 
         List<Long> categoryIds = products.stream()
                 .map(Product::getCategoryId)
