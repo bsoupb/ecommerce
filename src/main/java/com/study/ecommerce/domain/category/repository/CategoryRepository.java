@@ -16,5 +16,5 @@ public interface CategoryRepository extends JpaRepository<Category, Long> {
     @Query("SELECT COUNT(p) FROM Product p WHERE p.categoryId = :categoryId")
     Long countProductsByCategory(@Param("categoryId") Long id);
 
-    Optional<Category> findById(Long categoryId, Pageable pageable);
+
 }

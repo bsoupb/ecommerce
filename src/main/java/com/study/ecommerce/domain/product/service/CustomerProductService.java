@@ -153,6 +153,12 @@ public class CustomerProductService {
         return setProductResponse(pageable, products);
     }
 
+    public Page<ProductResponse> searchActiveProducts(String keyword, Pageable pageable) {
+        Page<Product> products = productRepository.findByNameContainingIgnoreCaseAndStatus(keyword, ACTIVE, pageable);
+
+        return mapToProductResponse(products);
+    }
+
     /*
         가격 범위로 판매중인 상품 검색
         param Pageable, Long minPrice, Long maxPrice
@@ -167,6 +173,11 @@ public class CustomerProductService {
         return setProductResponse(pageable, products);
     }
 
+    public Page<ProductResponse> getActiveProductsByPriceRange(Long minPrice, Long maxPrice, Pageable pageable) {
+        Page<Product> products = productRepository.findByPriceBetweenAndStatus(minPrice, maxPrice, ACTIVE, pageable);
+        return mapToProductResponse(products);
+    }
+
     /*
         카테고리 내에서 상품명으로 검색
         param Pageable, categoryId, keyword
@@ -176,7 +187,7 @@ public class CustomerProductService {
             throw new IllegalArgumentException("검색어를 입력해 주십시오.");
         }
 
-        Category category = categoryRepository.findById(categoryId, pageable)
+        Category category = categoryRepository.findById(categoryId)
                 .orElseThrow(() -> new EntityNotFoundException("존재하지 않는 카테고리 입니다."));
 
         Page<Product> products = productRepository.findByStatusAndCategoryIdAndNameContaining(categoryId, ACTIVE, keyword, pageable);
@@ -184,8 +195,25 @@ public class CustomerProductService {
         return setProductResponse(pageable, products);
     }
 
+    public Page<ProductResponse> searchActiveProductsInCategory(Long categoryId, String keyword, Pageable pageable) {
+        Category category = categoryRepository.findById(categoryId)
+                .orElseThrow(() -> new EntityNotFoundException("카테고리를 찾을 수 없습니다."));
+
+        Page<Product> products =
+                productRepository.findByCategoryIdAndNameContainingIgnoreCaseAndStatus(categoryId, keyword, ACTIVE, pageable);
+        return products.map(product -> new ProductResponse(
+                product.getId(),
+                product.getName(),
+                product.getDescription(),
+                product.getPrice(),
+                product.getStockQuantity(),
+                product.getStatus(),
+                category.getName()
+        ));
+    }
+
     /*
-        extract method
+        extract method (공통 관심사 메서드)
         Product Page를 ProductResponse의 Page로 변환하는 공통 메서드 구현
         Page<Product> -> Page<ProductResponse>
      */
@@ -205,6 +233,41 @@ public class CustomerProductService {
 
         return result;
     }
+
+    private Page<ProductResponse> mapToProductResponse(Page<Product> products) {
+        List<Long> categoryIds = products.getContent().stream()
+                .map(Product::getCategoryId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+
+        Map<Long, String> categoryMap = new HashMap<>();
+        if (!categoryIds.isEmpty()) {
+            List<Category> categories = categoryRepository.findAllById(categoryIds);
+            categories.forEach(category ->
+                    categoryMap.put(category.getId(), category.getName()));
+        }
+
+        return products.map(product -> {
+            String categoryName = "분류 없음";
+            if (product.getCategoryId() != null) {
+                categoryName = categoryMap.getOrDefault(product.getCategoryId(), "분류 없음");
+            }
+
+            return new ProductResponse(
+                    product.getId(),
+                    product.getName(),
+                    product.getDescription(),
+                    product.getPrice(),
+                    product.getStockQuantity(),
+                    product.getStatus(),
+                    categoryName
+            );
+        });
+
+    }
+
+
     
     /*
         categoryName 구하는 메서드
@@ -226,6 +289,7 @@ public class CustomerProductService {
 
         return categoryMap;
     }
+
 
 
 }
