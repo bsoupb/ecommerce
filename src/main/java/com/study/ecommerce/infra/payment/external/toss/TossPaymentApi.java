@@ -2,11 +2,13 @@ package com.study.ecommerce.infra.payment.external.toss;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 
+// 실제 toss 에서 제공하는 api
 @Slf4j
-@RequiredArgsConstructor
+@Component
 public class TossPaymentApi {
 
     public TossPaymentResponse requestPayment(TossPaymentRequest request) {

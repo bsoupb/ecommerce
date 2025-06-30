@@ -8,6 +8,8 @@ import java.util.List;
 
 @Component
 @RequiredArgsConstructor
+// 어떻게 생성해서 어떻게 반환하는지
+// 클래스 하나에서 처리
 public class PaymentProcessorFactory {
     private final List<PaymentProcessor> paymentProcessors;
 

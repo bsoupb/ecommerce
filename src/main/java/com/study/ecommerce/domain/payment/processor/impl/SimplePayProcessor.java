@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 
 @Slf4j
 @Component
@@ -20,24 +21,48 @@ public class SimplePayProcessor implements PaymentProcessor {
 
     @Override
     public PaymentResult process(PaymentRequest request) {
-        return null;
+
+        // 간편 결제 유효성 검사
+        if(!isSupportedProvider(request.simplePayProvider())) {
+            return PaymentResult.builder()
+                    .success(false)
+                    .message("지원하지 않은 간편 결제입니다.")
+                    .paymentMethod("SIMPLE_PAY")
+                    .build();
+        }
+
+        String transactionId = UUID.randomUUID().toString();
+        int feeAmount = calculateFee(request.amount());
+
+        return PaymentResult.builder()
+                .success(true)
+                .transactionId(transactionId)
+                .message("간편 결제가 완료되었습니다.")
+                .paidAmount(request.amount())
+                .feeAmount(feeAmount)
+                .paymentMethod(request.paymentMethod())
+                .build();
     }
 
     @Override
     public int calculateFee(int amount) {
-        return 0;
+        return (int) (amount * (1 - FEE_RATE));
     }
 
     @Override
     public boolean supports(String paymentMethod) {
-        return false;
+        return SUPPORTED_PROVIDERS.stream()
+                .anyMatch(provider -> provider.equals(paymentMethod));
     }
 
     @Override
     public int getMaxAmount() {
-        return 0;
+        return MAX_AMOUNT;
     }
 
     // isSupportedProvider(String provider)
+    public boolean isSupportedProvider(String provider) {
+        return provider != null && SUPPORTED_PROVIDERS.contains(provider);
+    }
 }
 
