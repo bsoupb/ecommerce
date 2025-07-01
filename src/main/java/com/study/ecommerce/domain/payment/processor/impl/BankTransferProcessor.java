@@ -53,7 +53,7 @@ public class BankTransferProcessor implements PaymentProcessor {
 
     @Override
     public int calculateFee(int amount) {
-        return (FIXED_FEE + amount);
+        return FIXED_FEE;
     }
 
     @Override

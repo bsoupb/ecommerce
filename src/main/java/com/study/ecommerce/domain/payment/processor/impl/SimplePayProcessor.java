@@ -46,7 +46,7 @@ public class SimplePayProcessor implements PaymentProcessor {
 
     @Override
     public int calculateFee(int amount) {
-        return (int) (amount * (1 - FEE_RATE));
+        return (int) (amount * FEE_RATE);
     }
 
     @Override

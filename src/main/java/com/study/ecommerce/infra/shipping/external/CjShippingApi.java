@@ -5,7 +5,6 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * CJ대한통운 외부 API (실제 API 호출 시뮬레이션)
@@ -70,7 +69,23 @@ public class CjShippingApi {
      */
     public CjShippingResponse cancelDelivery(String invoiceNo, String cancelReason) {
         // TODO
-        return null;
+        CjShippingResponse response = result.get(invoiceNo);
+
+        if(response == null) {
+            return CjShippingResponse.builder()
+                    .resultCode("기타")
+                    .resultMessage("해당 택배의 배송 정보를 찾을 수 없습니다.")
+                    .invoiceNo(invoiceNo)
+                    .build();
+        }
+
+        return CjShippingResponse.builder()
+                .resultCode("0000")
+                .resultMessage(cancelReason)
+                .invoiceNo(invoiceNo)
+                .orderNo(response.orderNo())
+                .deliveryCharge(response.deliveryCharge())
+                .build();
     }
 
     /**
