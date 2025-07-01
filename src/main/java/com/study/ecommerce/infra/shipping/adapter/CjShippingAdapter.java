@@ -61,7 +61,7 @@ public class CjShippingAdapter implements ShippingGateway {
         // CJ API를 통해 실제 배송비 계산 (여기서는 간단 계산)
         CjShippingRequest cjShippingRequest = convertToCjRequest(request);
 
-
+        // private 메서드인데 가져올 수 있는지....
 
         return 0;
     }
@@ -110,7 +110,7 @@ public class CjShippingAdapter implements ShippingGateway {
         return ShippingResponse.builder()
                 .success("0000".equals(cjResponse.resultCode()))
                 .trackingNumber(cjResponse.invoiceNo())
-                .status(convertCjStatus())
+                .status(convertCjStatus())      // 어디서 끌어와야 하는지...
                 .message(cjResponse.resultMessage())
                 .shippingCost(cjResponse.deliveryCharge())
                 .estimatedDeliveryDate(LocalDateTime.now().plusDays(2))
@@ -129,7 +129,7 @@ public class CjShippingAdapter implements ShippingGateway {
                 .trackingNumber(cjResponse.invoiceNo())
                 .status(convertCjStatus(cjResponse.deliveryStatus()))
                 .message(cjResponse.resultMessage())
-                .shippingCost()
+                .shippingCost()         // 어디서 끌어와야 하는지...
                 .estimatedDeliveryDate(LocalDateTime.now())
                 .carrierName(getCarrierName())
                 .errorCode("0000".equals(cjResponse.resultCode()) ? null : cjResponse.resultCode())
