@@ -91,7 +91,7 @@ public class CjShippingApi {
     /**
      * 배송비 계산 (CJ 고유 로직)
      */
-    private int calculateDeliveryCharge(CjShippingRequest request) {
+    public int calculateDeliveryCharge(CjShippingRequest request) {
         int baseCharge = 3000; // 기본 배송비
 
         // 무게에 따른 추가 요금

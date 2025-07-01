@@ -44,7 +44,7 @@ public class CjShippingAdapter implements ShippingGateway {
 
         CjTrackingResponse cjTrackingShipping = cjShippingApi.getTrackingInfo(trackingNumber);
 
-        return convertTrackingToShippingResponse(cjTrackingShipping);;
+        return convertTrackingToShippingResponse(cjTrackingShipping);
     }
 
     @Override
@@ -107,16 +107,17 @@ public class CjShippingAdapter implements ShippingGateway {
      * CJ API 응답을 공통 응답으로 변환
      */
     private ShippingResponse convertToShippingResponse(CjShippingResponse cjResponse) {
-        return ShippingResponse.builder()
-                .success("0000".equals(cjResponse.resultCode()))
-                .trackingNumber(cjResponse.invoiceNo())
-                .status(convertCjStatus())      // 어디서 끌어와야 하는지...
-                .message(cjResponse.resultMessage())
-                .shippingCost(cjResponse.deliveryCharge())
-                .estimatedDeliveryDate(LocalDateTime.now().plusDays(2))
-                .carrierName(getCarrierName())
-                .errorCode("0000".equals(cjResponse.resultCode()) ? null : cjResponse.resultCode())
-                .build();
+//        return ShippingResponse.builder()
+//                .success("0000".equals(cjResponse.resultCode()))
+//                .trackingNumber(cjResponse.invoiceNo())
+//                .status(convertCjStatus())      // 어디서 끌어와야 하는지...
+//                .message(cjResponse.resultMessage())
+//                .shippingCost(cjResponse.deliveryCharge())
+//                .estimatedDeliveryDate(LocalDateTime.now().plusDays(2))
+//                .carrierName(getCarrierName())
+//                .errorCode("0000".equals(cjResponse.resultCode()) ? null : cjResponse.resultCode())
+//                .build();
+        return null;
     }
 
     /**
@@ -124,16 +125,17 @@ public class CjShippingAdapter implements ShippingGateway {
      */
     private ShippingResponse convertTrackingToShippingResponse(CjTrackingResponse cjResponse) {
 
-        return ShippingResponse.builder()
-                .success("0000".equals(cjResponse.resultCode()))
-                .trackingNumber(cjResponse.invoiceNo())
-                .status(convertCjStatus(cjResponse.deliveryStatus()))
-                .message(cjResponse.resultMessage())
-                .shippingCost()         // 어디서 끌어와야 하는지...
-                .estimatedDeliveryDate(LocalDateTime.now())
-                .carrierName(getCarrierName())
-                .errorCode("0000".equals(cjResponse.resultCode()) ? null : cjResponse.resultCode())
-                .build();
+//        return ShippingResponse.builder()
+//                .success("0000".equals(cjResponse.resultCode()))
+//                .trackingNumber(cjResponse.invoiceNo())
+//                .status(convertCjStatus(cjResponse.deliveryStatus()))
+//                .message(cjResponse.resultMessage())
+//                .shippingCost()         // 어디서 끌어와야 하는지...
+//                .estimatedDeliveryDate(LocalDateTime.now())
+//                .carrierName(getCarrierName())
+//                .errorCode("0000".equals(cjResponse.resultCode()) ? null : cjResponse.resultCode())
+//                .build();
+        return null;
     }
 
     /**
