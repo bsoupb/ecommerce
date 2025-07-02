@@ -78,6 +78,10 @@ public class Order extends BaseTimeEntity {
         this.discountAmount = maxDiscount;
     }
 
+    public void updateShippingCost(BigDecimal minShippingCost) {
+        this.shippingCost = minShippingCost;
+    }
+
     public enum OrderStatus {
         CREATED, PAID, CANCELED, SHIPPING, CONFIRMED, DELIVERED
     }
