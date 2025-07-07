@@ -31,15 +31,15 @@ public class PremiumOrderProcessor extends OrderProcessTemplate {
     protected void validateOrderRequest(OrderCreateRequest request) {
         log.info("프리미엄 주문 요청 검증 시작");
 
-        if(request.items() != null || request.items().isEmpty()) {
+        if(request.items() == null || request.items().isEmpty()) {
             throw new IllegalArgumentException("주문 상품이 없습니다.");
         }
 
-        request.items().forEach(item -> {
-            if(item.getQuantity() <= 0) {
-                throw new IllegalArgumentException("주문 상품은 1개 이상이어야 합니다.");
-            }
-        });
+//        request.items().forEach(item -> {
+//            if(item.getQuantity() <= 0) {
+//                throw new IllegalArgumentException("주문 상품은 1개 이상이어야 합니다.");
+//            }
+//        });
 
         log.info("프리미엄 주문 요청 검증 완료");
     }
@@ -49,7 +49,7 @@ public class PremiumOrderProcessor extends OrderProcessTemplate {
         log.info("프리미엄 주문 재고 예약 시작");
 
         request.items().forEach(item -> {
-            log.debug("상품 {} 재고 예약: {}개", item.getProductId(), item.getQuantity());
+            log.debug("프리미엄 우선 재고 예약 - 상품 {} : {}개", item.getProductId(), item.getQuantity());
         });
 
         log.info("프리미엄 주문 재고 예약 완료");

@@ -31,16 +31,26 @@ public class SimplePayProcessor implements PaymentProcessor {
                     .build();
         }
 
-        String transactionId = UUID.randomUUID().toString();
+        // 결제 한도
+        if(request.amount() > MAX_AMOUNT) {
+            return PaymentResult.builder()
+                    .success(false)
+                    .message("간편결제 한도를 초과했습니다.")
+                    .paymentMethod("SIMPLE_PAY")
+                    .build();
+        }
+
+        // 실제 간편결제 처리
+        String transactionId = request.simplePayProvider() + "-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
         int feeAmount = calculateFee(request.amount());
 
         return PaymentResult.builder()
                 .success(true)
                 .transactionId(transactionId)
-                .message("간편 결제가 완료되었습니다.")
+                .message(request.simplePayProvider() + " 간편 결제가 완료되었습니다.")
                 .paidAmount(request.amount())
                 .feeAmount(feeAmount)
-                .paymentMethod(request.paymentMethod())
+                .paymentMethod("SIMPLE_PAY")
                 .build();
     }
 
@@ -51,8 +61,7 @@ public class SimplePayProcessor implements PaymentProcessor {
 
     @Override
     public boolean supports(String paymentMethod) {
-        return SUPPORTED_PROVIDERS.stream()
-                .anyMatch(provider -> provider.equals(paymentMethod));
+        return "SIMPLE_PAY".equals(paymentMethod);
     }
 
     @Override

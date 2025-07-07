@@ -29,10 +29,10 @@ public class CjShippingAdapter implements ShippingGateway {
         log.info("CJ대한통운 어댑터 - 배송 등록 요청 변환 및 처리");
 
         // 1. 우리 시스템의 요청을 CJ API 형태로 변환
-        CjShippingRequest cjShippingRequest = convertToCjRequest(request);
+        CjShippingRequest cjRequest = convertToCjRequest(request);
 
         // 2. CJ API 호출
-        CjShippingResponse cjShippingResponse = cjShippingApi.registerDelivery(cjShippingRequest);
+        CjShippingResponse cjShippingResponse = cjShippingApi.registerDelivery(cjRequest);
 
         // 3. CJ 응답을 우리 시스템 형태로 변환
         return convertToShippingResponse(cjShippingResponse);
@@ -42,9 +42,9 @@ public class CjShippingAdapter implements ShippingGateway {
     public ShippingResponse getShippingStatus(String trackingNumber) {
         log.info("CJ대한통운 어댑터 - 배송 상태 조회: {}", trackingNumber);
 
-        CjTrackingResponse cjTrackingShipping = cjShippingApi.getTrackingInfo(trackingNumber);
+        CjTrackingResponse cjShippingApiTrackingInfo = cjShippingApi.getTrackingInfo(trackingNumber);
 
-        return convertTrackingToShippingResponse(cjTrackingShipping);
+        return convertTrackingToShippingResponse(cjShippingApiTrackingInfo);
     }
 
     @Override
@@ -59,9 +59,17 @@ public class CjShippingAdapter implements ShippingGateway {
     @Override
     public int calculateShippingCost(ShippingRequest request) {
         // CJ API를 통해 실제 배송비 계산 (여기서는 간단 계산)
-        CjShippingRequest cjShippingRequest = convertToCjRequest(request);
+        int baseCharge = 3000;
 
-        // private 메서드인데 가져올 수 있는지....
+        // 5kg 초과
+        if(request.weight() > 5000) {
+            baseCharge += 2000;
+        }
+
+        // 제주도/도서산간 추가 요금
+        if(request.receiverZipCode().startsWith("63")) {
+            baseCharge += 3000;
+        }
 
         return 0;
     }
@@ -78,15 +86,16 @@ public class CjShippingAdapter implements ShippingGateway {
 
         return CjShippingRequest.builder()
                 .orderNo(request.orderId())
+                .senderAddr(request.senderAddress())
                 .senderName(request.senderName())
                 .senderTel(request.senderPhone())
-                .senderAddr(request.senderName())
-                .receiverName(request.receiverName())
                 .receiverAddr(request.receiverAddress())
+                .receiverName(request.receiverName())
                 .receiverZipCode(request.receiverZipCode())
+                .receiverTel(request.receiverPhone())
                 .weight(request.weight())
-                .boxType(request.packageType())
-                .specialService(SpecialServiceEnum.일반.getSpecialServiceCode())
+                .boxType(convertPackageType(request.packageType()))
+                .specialService("01")
                 .deliveryMessage(request.deliveryMessage())
                 .build();
     }
@@ -107,35 +116,36 @@ public class CjShippingAdapter implements ShippingGateway {
      * CJ API 응답을 공통 응답으로 변환
      */
     private ShippingResponse convertToShippingResponse(CjShippingResponse cjResponse) {
-//        return ShippingResponse.builder()
-//                .success("0000".equals(cjResponse.resultCode()))
-//                .trackingNumber(cjResponse.invoiceNo())
-//                .status(convertCjStatus())      // 어디서 끌어와야 하는지...
-//                .message(cjResponse.resultMessage())
-//                .shippingCost(cjResponse.deliveryCharge())
-//                .estimatedDeliveryDate(LocalDateTime.now().plusDays(2))
-//                .carrierName(getCarrierName())
-//                .errorCode("0000".equals(cjResponse.resultCode()) ? null : cjResponse.resultCode())
-//                .build();
-        return null;
+       boolean success = "0000".equals(cjResponse.resultCode());
+
+        return ShippingResponse.builder()
+                .success(success)
+                .trackingNumber(cjResponse.invoiceNo())
+                .status(success ? "REGISTERED" : "FAILED")      // 어디서 끌어와야 하는지...
+                .message(cjResponse.resultMessage())
+                .shippingCost(cjResponse.deliveryCharge())
+                .estimatedDeliveryDate(LocalDateTime.now().plusDays(2))
+                .carrierName(getCarrierName())
+                .errorCode(success ? null : cjResponse.resultCode())
+                .build();
     }
 
     /**
      * CJ 배송 조회 응답을 공통 응답으로 변환
      */
     private ShippingResponse convertTrackingToShippingResponse(CjTrackingResponse cjResponse) {
+        boolean success = "0000".equals(cjResponse.resultCode());
+        String status = convertCjStatus(cjResponse.deliveryStatus());
 
-//        return ShippingResponse.builder()
-//                .success("0000".equals(cjResponse.resultCode()))
-//                .trackingNumber(cjResponse.invoiceNo())
-//                .status(convertCjStatus(cjResponse.deliveryStatus()))
-//                .message(cjResponse.resultMessage())
-//                .shippingCost()         // 어디서 끌어와야 하는지...
-//                .estimatedDeliveryDate(LocalDateTime.now())
-//                .carrierName(getCarrierName())
-//                .errorCode("0000".equals(cjResponse.resultCode()) ? null : cjResponse.resultCode())
-//                .build();
-        return null;
+        return ShippingResponse.builder()
+                .success(success)
+                .trackingNumber(cjResponse.invoiceNo())
+                .status(status)
+                .message(cjResponse.resultMessage())
+                .carrierName(getCarrierName())
+                .errorCode(success ? null : cjResponse.resultCode())
+                .build();
+
     }
 
     /**
@@ -153,18 +163,18 @@ public class CjShippingAdapter implements ShippingGateway {
         };
     }
 
-    enum SpecialServiceEnum {
-        일반("01"),
-        당일배송("02");
-
-        private final String specialServiceCode;
-
-        SpecialServiceEnum(String specialServiceCode) {
-            this.specialServiceCode = specialServiceCode;
-        }
-
-        public String getSpecialServiceCode() {
-            return specialServiceCode;
-        }
-    }
+//    enum SpecialServiceEnum {
+//        일반("01"),
+//        당일배송("02");
+//
+//        private final String specialServiceCode;
+//
+//        SpecialServiceEnum(String specialServiceCode) {
+//            this.specialServiceCode = specialServiceCode;
+//        }
+//
+//        public String getSpecialServiceCode() {
+//            return specialServiceCode;
+//        }
+//    }
 }

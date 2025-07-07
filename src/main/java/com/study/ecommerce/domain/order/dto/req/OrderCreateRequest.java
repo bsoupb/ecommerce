@@ -5,12 +5,14 @@ import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.util.List;
 
+@Builder
 public record OrderCreateRequest(
         @NotNull
         Long memberId,
@@ -37,6 +39,7 @@ public record OrderCreateRequest(
     @Getter
     @NoArgsConstructor
     @AllArgsConstructor
+    @Builder
     public static class OrderItemRequest {
         @NotNull
         private Long productId;

@@ -7,6 +7,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 // 하나의 주문에 대한 계산
@@ -33,6 +34,7 @@ public class Payment extends BaseTimeEntity {
     private Long amount;
 
     private LocalDateTime paidAt;
+
 
     @Builder
     public Payment(Long orderId, PaymentMethod paymentMethod, PaymentStatus status, Long amount) {

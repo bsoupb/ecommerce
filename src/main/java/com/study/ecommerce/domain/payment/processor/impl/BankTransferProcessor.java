@@ -38,14 +38,13 @@ public class BankTransferProcessor implements PaymentProcessor {
                     .build();
         }
 
-        String transactionId = UUID.randomUUID().toString();
+        String transactionId = "BT-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
         int feeAmount = calculateFee(request.amount());
 
         return PaymentResult.builder()
                 .success(true)
                 .transactionId(transactionId)
                 .message("계좌 결제가 완료되었습니다.")
-                .paidAmount(request.amount())
                 .feeAmount(feeAmount)
                 .paymentMethod("BANK_TRANSFER")
                 .build();

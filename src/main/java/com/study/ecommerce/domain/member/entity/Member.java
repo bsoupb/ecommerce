@@ -31,6 +31,8 @@ public class Member extends BaseTimeEntity {    // createdAt, updatedAt 자동 �
     @Column(nullable = false)
     private Role role;
 
+    private boolean isDeleted;
+
     @Builder
     public Member(Long id, String email, String password, String name, String address, Role role) {
         this.id = id;

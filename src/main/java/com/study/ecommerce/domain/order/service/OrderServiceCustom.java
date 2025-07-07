@@ -325,4 +325,22 @@ public class OrderServiceCustom implements OrderService {
         return totalAmount;
     }
 
+    public BigDecimal getTodayOrderAmount(OrderCreateRequest request) {
+        Order order = orderRepository.findByMemberId(request.memberId())
+                .orElseThrow(() -> new EntityNotFoundException("존재하지 않은 주문입니다."));
+
+        List<Order> orders = orderRepository.findByOrderDate(order.getOrderDate().toLocalDate());
+        BigDecimal todayOrderAmount = BigDecimal.valueOf(orders.size());
+        return todayOrderAmount;
+    }
+
+    public BigDecimal calculateTotalAmount(OrderCreateRequest request) {
+        BigDecimal totalPrice = request.items().stream()
+                .map(req ->
+                        req.getPrice().multiply(BigDecimal.valueOf(req.getQuantity().longValue())))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        return totalPrice;
+    }
+
 }
