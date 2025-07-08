@@ -46,4 +46,8 @@ public class Member extends BaseTimeEntity {    // createdAt, updatedAt 자동 �
     public enum Role {
         CUSTOMER, SELLER, ADMIN
     }
+
+    public void updateName(String name) {
+        this.name = name;
+    }
 }

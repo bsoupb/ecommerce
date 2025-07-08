@@ -237,6 +237,7 @@ public class OrderServiceCustom implements OrderService {
         return orders.map(order -> new OrderResponse(order.getId(), order.getStatus(), order.getTotalAmount().longValue()));
     }
 
+
 //    @Override
 //    public Page<OrderResponse> getOrders(String email, Pageable pageable) {
 //        Member member = memberRepository.findByEmail(email)
@@ -325,6 +326,7 @@ public class OrderServiceCustom implements OrderService {
         return totalAmount;
     }
 
+
     public BigDecimal getTodayOrderAmount(OrderCreateRequest request) {
         Order order = orderRepository.findByMemberId(request.memberId())
                 .orElseThrow(() -> new EntityNotFoundException("존재하지 않은 주문입니다."));
@@ -341,6 +343,17 @@ public class OrderServiceCustom implements OrderService {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         return totalPrice;
+    }
+
+
+    @Override
+    public BigDecimal getTodayOrderAmount(Long memberId) {
+        Order order = orderRepository.findByMemberId(memberId)
+                .orElseThrow(() -> new EntityNotFoundException("존재하지 않은 주문입니다."));
+
+        List<Order> orders = orderRepository.findByOrderDate(order.getOrderDate().toLocalDate());
+        BigDecimal todayOrderAmount = BigDecimal.valueOf(orders.size());
+        return todayOrderAmount;
     }
 
 }
