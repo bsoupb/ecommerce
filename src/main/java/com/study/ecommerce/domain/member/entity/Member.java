@@ -31,6 +31,7 @@ public class Member extends BaseTimeEntity {    // createdAt, updatedAt 자동 �
     @Column(nullable = false)
     private Role role;
 
+    @Transient
     private boolean isDeleted;
 
     @Builder

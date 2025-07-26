@@ -2,6 +2,7 @@ package com.study.ecommerce.domain.category.controller;
 
 import com.study.ecommerce.domain.category.dto.req.CategoryRequest;
 import com.study.ecommerce.domain.category.dto.resp.CategoryResponse;
+import com.study.ecommerce.domain.category.facade.CategoryFacadeService;
 import com.study.ecommerce.domain.category.service.CategoryService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -16,7 +17,7 @@ import java.util.List;
 @RequestMapping("/api/v1/categories")
 @RequiredArgsConstructor
 public class CategoryController {
-    private final CategoryService categoryService;
+    private final CategoryFacadeService categoryService;
 
     @GetMapping
     public ResponseEntity<List<CategoryResponse>> getAllCategories() {
